@@ -3,7 +3,8 @@ from tkinter import messagebox
 
 class CalculatorApp:
     """
-    A professional-looking GUI calculator application using Tkinter.
+    A professional-looking GUI calculator application using Tkinter,
+    now using a high-contrast, light theme for maximum visibility.
     """
     def __init__(self, master):
         self.master = master
@@ -12,15 +13,16 @@ class CalculatorApp:
         # Disable resizing for a fixed, clean calculator layout
         master.resizable(False, False)
         
-        # Color palette for a professional, dark theme
-        self.dark_bg = '#222831'     # Main background (Very dark gray)
-        self.display_bg = '#393E46'  # Display area background (Dark gray)
-        self.num_btn_color = '#3D444F' # Number button color (Darker slate for better contrast)
-        self.op_btn_color = '#00ADB5'  # Operator button color (Cyan/Aqua accent)
-        self.eq_btn_color = '#FF5722'  # Equals button color (Orange/Red accent)
-        self.text_color = 'white'
+        # --- High-Contrast Light Color Palette ---
+        self.light_bg = '#FFFFFF'     # Main background (Pure White)
+        self.display_bg = '#444444'  # Display area background (Dark Slate)
+        self.num_btn_color = '#F0F0F0' # Number button color (Very light gray)
+        self.op_btn_color = '#4CAF50'  # Operator button color (Green accent)
+        self.eq_btn_color = '#FF9800'  # Equals button color (Orange accent)
+        self.text_color_dark = 'black' # Text color for light backgrounds
+        self.text_color_light = 'white' # Text color for dark backgrounds
         
-        master.configure(bg=self.dark_bg)
+        master.configure(bg=self.light_bg)
 
         # State variable for the calculator display
         self.current_expression = ""
@@ -33,7 +35,7 @@ class CalculatorApp:
             font=('Inter', 30, 'bold'), 
             bd=0, 
             bg=self.display_bg, 
-            fg=self.text_color, 
+            fg=self.text_color_light, # White text on dark display
             justify='right',
             relief='flat'
         )
@@ -41,11 +43,10 @@ class CalculatorApp:
         self.display.grid(row=0, column=0, columnspan=4, sticky="nsew", ipadx=8, ipady=10, padx=10, pady=(10, 5))
 
         # --- Button Layout Definition ---
-        # The first row is special (Clear, Parenthesis, Divide)
         buttons = [
-            # Row 1
+            # Row 1 (Clear and Parenthesis use light text on dark colors)
             ('C', 1, 0, self.eq_btn_color), ('(', 1, 1, self.op_btn_color), (')', 1, 2, self.op_btn_color), ('/', 1, 3, self.op_btn_color),
-            # Row 2
+            # Row 2 (Numbers use dark text on light color)
             ('7', 2, 0, self.num_btn_color), ('8', 2, 1, self.num_btn_color), ('9', 2, 2, self.num_btn_color), ('*', 2, 3, self.op_btn_color),
             # Row 3
             ('4', 3, 0, self.num_btn_color), ('5', 3, 1, self.num_btn_color), ('6', 3, 2, self.num_btn_color), ('-', 3, 3, self.op_btn_color),
@@ -67,6 +68,15 @@ class CalculatorApp:
 
     def create_button(self, text, row, col, color, colspan=1):
         """Helper function to create and place buttons with consistent styling."""
+        
+        # 1. Determine Foreground (Text) Color based on button type
+        # Numbers and decimal point get dark text on light background
+        if text.isdigit() or text == '.':
+            fg_color = self.text_color_dark 
+        else:
+            # Operators, 'C', '(', ')', and '=' get light text on dark background
+            fg_color = self.text_color_light
+            
         action = lambda t=text: self.button_click(t)
 
         # Special action mapping
@@ -82,9 +92,9 @@ class CalculatorApp:
             pady=20, 
             font=('Inter', 18, 'bold'), 
             bg=color, 
-            fg=self.text_color,
+            fg=fg_color, 
             activebackground=color,
-            activeforeground=self.text_color,
+            activeforeground=fg_color, 
             command=action, 
             relief='flat',
             bd=0,
@@ -94,14 +104,17 @@ class CalculatorApp:
         button.grid(row=row, column=col, columnspan=colspan, sticky="nsew", padx=5, pady=5)
         
         # Add a subtle hover effect (visual feedback is key for professional apps)
-        button.bind("<Enter>", lambda e: e.widget.config(bg=self.shade_color(color, 1.2)))
+        button.bind("<Enter>", lambda e: e.widget.config(bg=self.shade_color(color, 0.9)))
         button.bind("<Leave>", lambda e: e.widget.config(bg=color))
 
     def shade_color(self, hex_color, factor):
         """Slightly lightens or darkens a hex color for hover effect."""
         try:
+            # Convert hex to RGB
             rgb = [int(hex_color[i:i+2], 16) for i in (1, 3, 5)]
+            # Apply shading factor
             shaded = [min(255, max(0, int(c * factor))) for c in rgb]
+            # Convert RGB back to hex
             return f'#{shaded[0]:02x}{shaded[1]:02x}{shaded[2]:02x}'
         except:
             return hex_color # Return original if shading fails
@@ -123,11 +136,8 @@ class CalculatorApp:
         """Evaluates the current expression and updates the display."""
         try:
             # Use Python's built-in eval for expression evaluation
-            # Replace common syntax that might cause issues if not handled (e.g., --)
             safe_expression = self.current_expression.replace('x', '*').replace('÷', '/')
             
-            # Use 'eval' carefully. For a calculator, it's suitable, but real-world 
-            # security risks exist if expression came from an untrusted source.
             result = str(eval(safe_expression))
             
             # Format large numbers to avoid scientific notation
